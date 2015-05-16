@@ -172,7 +172,9 @@ function post_flagger_flag_post() {
     $post_id  = intval($_POST['post_id']);
     $metaSlug = $_POST['flag_slug'];
 
-    $flaggedCode = post_flagger_get_flagged_code($metaSlug);
+    $flagData = post_flagger_get_flag_html_codes($metaSlug);
+    $targetCode = $action . "ged_code";
+    $flaggedCode = $flagData->{$targetCode};
 
     $target_fn = "post_flagger_{$action}_post_for_current_user";
     call_user_func_array($target_fn, array($post_id, $metaSlug));

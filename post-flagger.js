@@ -52,7 +52,7 @@
             var flagging_request = make_request_for(flag_action, the_post_id, flag_slug);
 
             flagging_request.done(function(data) {
-                var new_class = flag_action === 'flag' ? 'flag-this' : 'flagged';
+                var new_class = flag_action === 'flag' ? 'flagged' : 'flag-this';
 
                 thisButton.removeClass();
                 thisButton.addClass(new_class);
