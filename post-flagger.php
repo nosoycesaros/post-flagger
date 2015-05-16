@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Post Flagger
-Plugin URI: http://owak.co/post-flagger/
+Plugin URI: https://wordpress.org/support/plugin/post-flagger/
 Description: Manage posts flags, which can be marked on/off by logged in users. Automatically creates "Favorites" flag and button ready to use in your posts.
 Author: Cesaros
 Version: 1.0.1
@@ -18,9 +18,9 @@ include (plugin_dir_path( __FILE__ ) . '/options.php');
  */
 function post_flagger_scripts() {
     //Enqueque post-flagger.js
-    wp_enqueue_script( 'post_flagger_script', plugin_dir_url( __FILE__ ) . 'post-flagger.min.js', array('jquery'), '1.0.0', true );
+    wp_enqueue_script( 'post_flagger_script', plugin_dir_url( __FILE__ ) . 'post-flagger.js', array('jquery'), '1.0.0', true );
     //Add ajax_url var to the JS
-    wp_localize_script( 'post_flagger_script', 'the_ajax_script', array( 'ajaxurl' => admin_url( 'admin-ajax.php' ) ) );
+    wp_localize_script( 'post_flagger_script', 'post_flagger', array( 'flag_url' => admin_url( 'admin-ajax.php' ) ) );
 
 }
 add_action( 'wp_enqueue_scripts', 'post_flagger_scripts' );
@@ -32,17 +32,16 @@ add_action( 'wp_enqueue_scripts', 'post_flagger_scripts' );
  * @return string
  */
 
-//function post_flagger_add_content_flag( $content ) {
-////    if ( is_user_logged_in() ) {
-////        $favorites = do_shortcode( '[flag slug="favorites"]' );
-////
-////        return $content . $favorites;
-////    }
-//
-//    return $content;
-//}
+function post_flagger_add_content_flag( $content ) {
+    if ( is_user_logged_in() ) {
+        $favorites = do_shortcode( '[flag slug="favorites"]' );
+        return $content . $favorites;
+    }
+
+    return $content;
+}
 ////FILTER TO ADD FLAG BUTTON
-//add_filter( 'the_content', 'post_flagger_add_content_flag');
+add_filter( 'the_content', 'post_flagger_add_content_flag');
 
 
 /**
@@ -64,10 +63,10 @@ function post_flagger_flag_button($atts) {
 
         if (pf_flagged($a['slug'])) {
             //The post is faved
-            $flagButton = '<a class="flagged" post-id="' . $post->ID . '" flag="' . $a['slug'] . '" href="#">' . $flagData->flagged_code . '</a>';
+            $flagButton = '<a class="flagged" data-post-id="' . $post->ID . '" data-flag-slug="' . $a['slug'] . '" href="#">' . $flagData->flagged_code . '</a>';
         } else {
             //The post is not faved
-            $flagButton = '<a class="flag-this" post-id="' . $post->ID . '" flag="' . $a['slug'] . '" href="#">' . $flagData->unflagged_code . '</a>';
+            $flagButton = '<a class="flag-this" data-post-id="' . $post->ID . '" data-flag-slug="' . $a['slug'] . '" href="#">' . $flagData->unflagged_code . '</a>';
         }
 
         return $flagButton;
@@ -102,6 +101,42 @@ function post_flagger_update_user_meta($metaKey, $value) {
 }
 
 /**
+ * adds a new flagged content to the current user's meta
+ *
+ * @param $post_id
+ * @param $flag_slug
+ *
+ * @return mixed
+ */
+function post_flagger_flag_post_for_current_user($post_id, $flag_slug) {
+    $flagMetaKey = post_flagger_get_flag_meta_key($flag_slug);
+
+    $contentFlaggedByUser = post_flagger_get_user_meta($flagMetaKey);
+    array_push($contentFlaggedByUser, $post_id);
+
+    return post_flagger_update_user_meta($flagMetaKey, $contentFlaggedByUser);
+}
+
+/**
+ * unflags a post for the current logged in user by deleting the user meta
+ *
+ * @param $post_id
+ * @param $flag_slug
+ *
+ * @return mixed
+ */
+function post_flagger_unflag_post_for_current_user($post_id, $flag_slug) {
+    $flagMetaKey = post_flagger_get_flag_meta_key($flag_slug);
+
+    $contentFlaggedByUser = post_flagger_get_user_meta($flagMetaKey);
+    $post_index = array_search($post_id, $contentFlaggedByUser);
+
+    unset($contentFlaggedByUser[$post_index]);
+
+    return post_flagger_update_user_meta($flagMetaKey, $contentFlaggedByUser);
+}
+
+/**
  * Returns true when a post is flagged with a meta key
  * Loads the meta key by a given slug in the $metaKeys array()
  *
@@ -116,9 +151,7 @@ function pf_flagged($metaSlug) {
     $meta = post_flagger_get_user_meta($metaKey);
 
     if (!empty($meta)){
-        if (in_array($post->ID, $meta)) {
-            return true;
-        }
+        return in_array($post->ID, $meta);
     }
 
     return false;
@@ -135,24 +168,24 @@ function pf_flagged($metaSlug) {
  *
  */
 function post_flagger_flag_post() {
-    $post_id = intval($_POST['post_id']);
+    $action   = $_POST['flag_action'];
+    $post_id  = intval($_POST['post_id']);
     $metaSlug = $_POST['flag_slug'];
 
-    $metaKey = post_flagger_get_flag_meta_key($metaSlug);
-    $flaggedCode = post_flagger_get_flagged_code($metaSlug);
+    $flagData = post_flagger_get_flag_html_codes($metaSlug);
+    $targetCode = $action . "ged_code";
+    $flaggedCode = $flagData->{$targetCode};
 
-    $views = post_flagger_get_user_meta($metaKey);
-    $views[] = $post_id;
-
-    post_flagger_update_user_meta($metaKey, $views);
+    $target_fn = "post_flagger_{$action}_post_for_current_user";
+    call_user_func_array($target_fn, array($post_id, $metaSlug));
 
     echo $flaggedCode;
-    die();
+    wp_die();
 }
 
 /** RECEIVE FLAG AJAX */
-add_action( 'wp_ajax_flag', 'post_flagger_flag_post' );
-
+add_action( 'wp_ajax_flag_post', 'post_flagger_flag_post' );
+add_action('wp_ajax_nopriv_flag_post', 'post_flagger_flag_post');
 
 
 /******************************
@@ -161,7 +194,11 @@ add_action( 'wp_ajax_flag', 'post_flagger_flag_post' );
  *
  ******************************/
 
-
+/**
+ * @param string $output_type
+ *
+ * @return mixed
+ */
 function post_flagger_get_flags($output_type = 'OBJECT') {
     global $wpdb;
 
@@ -212,6 +249,11 @@ function post_flagger_get_flag_meta_key($metaSlug) {
     return $flagData->meta_key;
 }
 
+/**
+ * @param $metaSlug
+ *
+ * @return mixed
+ */
 function post_flagger_get_flagged_code($metaSlug) {
     global $wpdb;
 
@@ -234,6 +276,9 @@ function post_flagger_get_flag_html_codes($metaSlug) {
     return $flagData;
 }
 
+/**
+ * @param $fields
+ */
 function post_flagger_update_flag($fields) {
     global $wpdb;
 
@@ -290,12 +335,20 @@ function post_flagger_create_flag($fields) {
     );
 }
 
+/**
+ * @param $flagId
+ */
 function post_flagger_delete_flag($flagId) {
     global $wpdb;
 
     $wpdb->delete( $wpdb->prefix . 'post_flagger', array( 'id' => $flagId ) );
 }
 
+/**
+ * @param $metaSlug
+ *
+ * @return bool
+ */
 function post_flagger_flag_exists($metaSlug) {
     global $wpdb;
 
@@ -308,6 +361,9 @@ function post_flagger_flag_exists($metaSlug) {
     return false;
 }
 
+/**
+ *
+ */
 function post_flagger_create_favorites() {
 
     $favorite = array(
