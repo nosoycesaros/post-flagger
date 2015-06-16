@@ -1,6 +1,15 @@
 ![post flagger cover](https://dl.dropboxusercontent.com/u/20749637/wordpress%20plugins/post-flagger/post-flagger.png)
 # Post Flagger Wordpress Plugin
 
+Contributors: nosoycesaros
+Donate link: https://github.com/nosoycesaros/post-flagger
+Tags: flag, post, favorites, views, shortcode, meta, user, log in, admin, link, links
+Requires at least: 3.0.1
+Tested up to: 4.1.1
+Stable tag: 1.1
+License: GPLv2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
+
 Add Favorite or any flag button to your posts or custom Post Types. The easy way.
 
 ----
@@ -50,6 +59,9 @@ Try using your html code whitout any quotes. e.g. `<img src=star.png />`
 
 ###Changelog
 
+####1.1
+* Adds unflag posts feature
+
 ####1.0.1
 * Bug fixes
 
@@ -66,6 +78,9 @@ Try using your html code whitout any quotes. e.g. `<img src=star.png />`
 
 
 ###Upgrade Notice
+
+####1.1
+Adds unflag posts feature
 
 ####1.0.1
 * Important bug fixes
