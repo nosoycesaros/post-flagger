@@ -40,7 +40,7 @@
         var $flagButtons = $('.flag-this, .flagged');
 
         //bind the "click" event to the bind functionality
-        $flagButtons.bind('click', function() {
+        $flagButtons.bind('click', function(event) {
             event.preventDefault();
 
             var thisButton  = $(this),

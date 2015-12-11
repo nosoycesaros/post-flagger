@@ -109,12 +109,16 @@ function post_flagger_update_user_meta($metaKey, $value) {
  * @return mixed
  */
 function post_flagger_flag_post_for_current_user($post_id, $flag_slug) {
-    $flagMetaKey = post_flagger_get_flag_meta_key($flag_slug);
+  $flagMetaKey = post_flagger_get_flag_meta_key($flag_slug);
 
-    $contentFlaggedByUser = post_flagger_get_user_meta($flagMetaKey);
+  $contentFlaggedByUser = post_flagger_get_user_meta($flagMetaKey);
+  if (empty($contentFlaggedByUser)){
+    $contentFlaggedByUser = array($post_id);
+  }
+  else {
     array_push($contentFlaggedByUser, $post_id);
-
-    return post_flagger_update_user_meta($flagMetaKey, $contentFlaggedByUser);
+  }
+  return post_flagger_update_user_meta($flagMetaKey, $contentFlaggedByUser);
 }
 
 /**
