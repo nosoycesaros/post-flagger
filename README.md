@@ -1,4 +1,4 @@
-![post flagger cover](https://dl.dropboxusercontent.com/u/20749637/wordpress%20plugins/post-flagger/post-flagger.png)
+<!-- ![post flagger cover](https://dl.dropboxusercontent.com/u/20749637/wordpress%20plugins/post-flagger/post-flagger.png) -->
 # Post Flagger Wordpress Plugin
 
 ----
